@@ -24,25 +24,22 @@ void write_pid_file(int pid, char *pidname) {
   int fd = -1, n = 0;
 
   fd = open(pidname, O_WRONLY | O_TRUNC | O_CREAT, 0660);
-  if (fd == -1) {
-    perror("open");
-    return;
-  }
-  if ((n = snprintf(buf, sizeof buf, "%d", pid)) < 0) {
-    perror("snprintf");
-    return;
-  }
-  if (lseek(fd, 0, SEEK_SET) < 0) {
-    perror("lseek");
-  }
-  if (ftruncate(fd, 0) < 0) {
-    perror("ftruncate");
-  }
-  if (write(fd, buf, n) < 0) {
-    perror("write");
-  }
+  if (fd == -1)
+    goto cleanup;
 
-  close(fd);
+  if ((n = snprintf(buf, sizeof buf, "%d", pid)) < 0)
+    goto cleanup;
+  if (lseek(fd, 0, SEEK_SET) < 0)
+    goto cleanup;
+  if (ftruncate(fd, 0) < 0)
+    goto cleanup;
+  if (write(fd, buf, n) < 0)
+    goto cleanup;
+
+cleanup:
+  perror("write_pid_file");
+  if (fd != -1) close(fd);
+  return;
 }
 
 void spawn_child(int argc, char *args[]) {
@@ -104,17 +101,15 @@ void stdio_redirect(char *dest, int fd) {
   int out;
 
   if (dest == NULL) {
-    dest = "/dev/null\0";
+    dest = "/dev/null";
   }
   out = open(dest, O_WRONLY | O_APPEND | O_CREAT, 0660);
+  if (out == -1) goto cleanup;
+  else if (dup2(out, fd) == -1) goto cleanup;
 
-  // TODO: make a goto for errors
-  if (out == -1) {
-    perror("open");
-  }
-  else if (dup2(out, fd) == -1) {
-    perror("dup2");
-  }
+cleanup:
+  if (out != -1) close(out);
+  perror("stdio_redirect");
 }
 
 void set_pidfile_path(char *pidname) {
@@ -124,7 +119,7 @@ void set_pidfile_path(char *pidname) {
 
   sprintf(basepath, "%s/.aeternum/", homedir);
 
-  if (lstat(pidfile, &has_dir) == -1) {
+  if (lstat(basepath, &has_dir) == -1) {
     if (errno == ENOENT) {
       if (mkdir(basepath, 0755) == -1) {
         perror("mkdir");
