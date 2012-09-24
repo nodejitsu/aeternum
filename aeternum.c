@@ -29,17 +29,12 @@ void write_pid_file(int pid, char *pidname) {
 
   if ((n = snprintf(buf, sizeof buf, "%d", pid)) < 0)
     goto cleanup;
-  if (lseek(fd, 0, SEEK_SET) < 0)
-    goto cleanup;
-  if (ftruncate(fd, 0) < 0)
-    goto cleanup;
   if (write(fd, buf, n) < 0)
     goto cleanup;
 
 cleanup:
   perror("write_pid_file");
   if (fd != -1) close(fd);
-  return;
 }
 
 void spawn_child(int argc, char *args[]) {
@@ -138,8 +133,12 @@ int main(int argc, char *argv[]) {
   loop = uv_default_loop();
   options_t opts = options_parse(argc, argv);
 
-  if (opts.pidname != NULL)
-    set_pidfile_path(opts.pidname);
+  if (opts.pidname != NULL) {
+
+    if (strcspn(opts.pidname, "/") < strlen(opts.pidname))
+      pidfile = strdup(opts.pidname);
+    else set_pidfile_path(opts.pidname);
+  }
   else
     set_pidfile_path(opts.target);
 
