@@ -33,8 +33,14 @@ void write_pid_file(int pid, char *pidname) {
     goto cleanup;
 
 cleanup:
-  perror("write_pid_file");
+  fprintf(stderr, "%s\n", strerror(errno));
   if (fd != -1) close(fd);
+}
+
+void cleanup_pid_file(char *pidname) {
+  if (unlink(pidname) == -1) {
+    fprintf(stderr, "Could not remove %s: %s\n", pidname, strerror(errno));
+  }
 }
 
 void spawn_child(int argc, char *args[]) {
@@ -43,7 +49,6 @@ void spawn_child(int argc, char *args[]) {
 
   options.stdio_count = 3;
 
-  // TODO: Make sure this isn't stupid.
   for (i = 0; i < options.stdio_count; i++) {
     stdio[i].flags = UV_INHERIT_FD;
     stdio[i].data.fd = i;
@@ -67,10 +72,14 @@ void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
   // This is shitty.  Make smarter.
   if (signal_status) {
 #ifdef __sun
-    signame = sig2str(signal_status);
+    // The SunOS version returns by reference.
+    sig2str(signal_status, signame);
 #else
+    // TODO: Make sure this doesn't only work on OSX/BSD
     signame = strdup(sys_signame[signal_status]);
 #endif
+    // This part of the logic in particular can probably stand to be better.
+    // Currently, SIGINT, SIGTERM, and SIGHUP prevent further child restarts.
     if (strcmp("int", signame) == 0 ||
         strcmp("term", signame) == 0 ||
         strcmp("hup", signame) == 0) {
@@ -78,8 +87,8 @@ void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
       uv_close((uv_handle_t*)req, NULL);
       free(child_argv);
       free(signame);
-      // TODO: Investigate why this is necessary.
-      exit(0);
+      cleanup_pid_file(pidfile);
+      return;
     }
     else {
       fprintf(stderr, "Killed by sig%s, restarting.\n", signame);
@@ -91,7 +100,6 @@ void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
   spawn_child(child_argc, child_argv);
 }
 
-// TODO: Replace this with libuv fs ops for portability
 void stdio_redirect(char *dest, int fd) {
   int out;
 
@@ -104,7 +112,7 @@ void stdio_redirect(char *dest, int fd) {
 
 cleanup:
   if (out != -1) close(out);
-  perror("stdio_redirect");
+  if (errno != 0) perror("stdio_redirect");
 }
 
 void set_pidfile_path(char *pidname) {
@@ -118,7 +126,6 @@ void set_pidfile_path(char *pidname) {
     if (errno == ENOENT) {
       if (mkdir(basepath, 0755) == -1) {
         perror("mkdir");
-        exit(1);
       }
     }
   }
@@ -134,7 +141,6 @@ int main(int argc, char *argv[]) {
   options_t opts = options_parse(argc, argv);
 
   if (opts.pidname != NULL) {
-
     if (strcspn(opts.pidname, "/") < strlen(opts.pidname))
       pidfile = strdup(opts.pidname);
     else set_pidfile_path(opts.pidname);
@@ -163,6 +169,5 @@ int main(int argc, char *argv[]) {
   spawn_child(child_argc, child_argv);
 
   r = uv_run(loop);
-  free(child_argv);
   return r;
 }
