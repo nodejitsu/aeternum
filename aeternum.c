@@ -9,15 +9,19 @@
 #include "uv.h"
 #include "options.h"
 
-static int child_argc = 0;
-static char **child_argv;
 static char *pidfile;
+
+static char *outfile;
+static char *errfile;
+
+options_t opts;
 
 uv_loop_t *loop;
 uv_process_t child_req;
 uv_process_options_t options;
 
 void spawn_cb(uv_process_t*, int, int);
+void configure_stdio();
 
 void write_pid_file(int pid, char *pidname) {
   char buf[33];
@@ -33,7 +37,7 @@ void write_pid_file(int pid, char *pidname) {
     goto cleanup;
 
 cleanup:
-  fprintf(stderr, "%s\n", strerror(errno));
+  if (errno != 0) fprintf(stderr, "%s\n", strerror(errno));
   if (fd != -1) close(fd);
 }
 
@@ -43,7 +47,7 @@ void cleanup_pid_file(char *pidname) {
   }
 }
 
-void spawn_child(int argc, char *args[]) {
+void spawn_child(int detach) {
   uv_stdio_container_t stdio[3];
   int i;
 
@@ -54,28 +58,33 @@ void spawn_child(int argc, char *args[]) {
     stdio[i].data.fd = i;
   }
 
-  options.file = strdup(args[0]);
-  options.args = args;
+  options.file = strdup(opts.child_args[0]);
+  options.args = opts.child_args;
   options.stdio = stdio;
-  options.exit_cb = spawn_cb;
+  options.exit_cb = detach ? NULL : spawn_cb;
+  if (detach) options.flags = UV_PROCESS_DETACHED;
 
   if (uv_spawn(loop, &child_req, options)) {
     fprintf(stderr, "Error %s\n", uv_err_name(uv_last_error(loop)));
     fprintf(stderr, "%s\n", uv_strerror(uv_last_error(loop)));
   }
 
+  if (detach) {
+    uv_unref((uv_handle_t*)&child_req);
+    return;
+  }
+
   write_pid_file(child_req.pid, pidfile);
 }
 
 void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
-  char *signame;
-  // This is shitty.  Make smarter.
+  char *signame = NULL;
   if (signal_status) {
 #ifdef __sun
     // The SunOS version returns by reference.
     sig2str(signal_status, signame);
 #else
-    // TODO: Make sure this doesn't only work on OSX/BSD
+    // TODO: Figure out how to make this work on Linux
     signame = strdup(sys_signame[signal_status]);
 #endif
     // This part of the logic in particular can probably stand to be better.
@@ -85,7 +94,6 @@ void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
         strcmp("hup", signame) == 0) {
       fprintf(stderr, "Got sig%s, exiting.\n", signame);
       uv_close((uv_handle_t*)req, NULL);
-      free(child_argv);
       free(signame);
       cleanup_pid_file(pidfile);
       return;
@@ -95,24 +103,42 @@ void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
     }
   }
   else {
-    fprintf(stderr, "Exit %d, signal %d.\n", exit_status, signal_status);
+    fprintf(stderr, "Exited with %d, restarting.\n", exit_status);
   }
-  spawn_child(child_argc, child_argv);
+  spawn_child(0);
 }
 
-void stdio_redirect(char *dest, int fd) {
+int stdio_redirect(char *dest, int fd) {
   int out;
 
   if (dest == NULL) {
     dest = "/dev/null";
   }
   out = open(dest, O_WRONLY | O_APPEND | O_CREAT, 0660);
-  if (out == -1) goto cleanup;
-  else if (dup2(out, fd) == -1) goto cleanup;
+  if (out == -1) {
+    close(out);
+    perror("stdio_redirect");
+    return -1;
+  }
+  else if (dup2(out, fd) == -1) {
+    close(out);
+    perror("stdio_redirect");
+    return -1;
+  }
+  return out;
+}
 
-cleanup:
-  if (out != -1) close(out);
-  if (errno != 0) perror("stdio_redirect");
+void configure_stdio() {
+  outfile = opts.outfile;
+  errfile = opts.errfile;
+  stdio_redirect(opts.infile, STDIN_FILENO);
+  stdio_redirect(opts.outfile, STDOUT_FILENO);
+  if (opts.errfile != NULL) {
+    stdio_redirect(opts.errfile, STDERR_FILENO);
+  }
+  else {
+    stdio_redirect(opts.outfile, STDERR_FILENO);
+  }
 }
 
 void set_pidfile_path(char *pidname) {
@@ -135,38 +161,30 @@ void set_pidfile_path(char *pidname) {
 }
 
 int main(int argc, char *argv[]) {
-  int i = 0, r;
-
+  int r;
   loop = uv_default_loop();
-  options_t opts = options_parse(argc, argv);
+
+  opts = options_parse(argc, argv);
+  if (strcmp(argv[1], "start") == 0) {
+    argv[1] = "run";
+    opts.target = argv[0];
+    opts.child_args = &argv[0];
+    spawn_child(1);
+    return 0;
+  }
 
   if (opts.pidname != NULL) {
     if (strcspn(opts.pidname, "/") < strlen(opts.pidname))
       pidfile = strdup(opts.pidname);
     else set_pidfile_path(opts.pidname);
   }
-  else
-    set_pidfile_path(opts.target);
-
-  child_argv = malloc(sizeof(char*) * argc);
-
-  do {
-    child_argv[i] = strdup(opts.child_args[i]);
-    i++;
-  } while (opts.child_args[i] != NULL);
-
-  child_argv[i] = NULL;
-
-  stdio_redirect(opts.infile, fileno(stdin));
-  stdio_redirect(opts.outfile, fileno(stdout));
-  if (opts.errfile != NULL) {
-    stdio_redirect(opts.errfile, fileno(stderr));
-  }
   else {
-    stdio_redirect(opts.outfile, fileno(stderr));
+    set_pidfile_path(opts.target);
   }
 
-  spawn_child(child_argc, child_argv);
+  configure_stdio();
+
+  spawn_child(0);
 
   r = uv_run(loop);
   return r;
