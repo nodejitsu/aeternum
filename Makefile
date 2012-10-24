@@ -17,16 +17,16 @@ endif
 all: libuv aeternum
 
 aeternum: 
-  gcc $(CFLAGS) -o aeternum aeternum.c options.c deps/libuv/uv.a
+	gcc $(CFLAGS) -o aeternum aeternum.c options.c deps/libuv/uv.a
 
 libuv: 
-  make -C deps/libuv/
+	make -C deps/libuv/
 
 clean: 
-  rm -f aeternum
+	rm -f aeternum
 
 cleanall: 
-  rm -f aeternum
-  make clean -C deps/libuv/
+	rm -f aeternum
+	make clean -C deps/libuv/
 
 .PHONY: clean cleanall
