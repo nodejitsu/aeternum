@@ -12,13 +12,14 @@ systems.  To compile, simply run `make` from the project root.
 
 Once compiled, usage is simple:
 
-     ./aeternum -o outputfile -- ./otherprogram
+     ./aeternum start -o outputfile -- ./otherprogram
 
 The `--` option is used to separate `aeternum` arguments from any arguments
 passed to the child process.
 
 ### Options
 
+ - `start`: Tells `aeternum` to background the process.  Must be the first argument.
  - `-o`: File to redirect `stdout` to.  If no separate file is provided for
    `stderr`, the same file will be used for both.
  - `-e`: File to redirect `stderr` to. (optional)
