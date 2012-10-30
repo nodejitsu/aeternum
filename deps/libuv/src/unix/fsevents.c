@@ -21,6 +21,21 @@
 #include "uv.h"
 #include "internal.h"
 
+#if TARGET_OS_IPHONE
+
+/* iOS (currently) doesn't provide the FSEvents-API (nor CoreServices) */
+
+int uv__fsevents_init(uv_fs_event_t* handle) {
+  return 0;
+}
+
+
+int uv__fsevents_close(uv_fs_event_t* handle) {
+  return 0;
+}
+
+#else /* TARGET_OS_IPHONE */
+
 #include <assert.h>
 #include <stdlib.h>
 #include <CoreServices/CoreServices.h>
@@ -67,8 +82,8 @@ void uv__fsevents_cb(uv_async_t* cb, int status) {
 
   UV__FSEVENTS_WALK(handle, {
     if (handle->fd != -1)
-      handle->cb(handle, event->path, event->events, 0);
-  })
+      handle->cb(handle, event->path[0] ? event->path : NULL, event->events, 0);
+  });
 
   if ((handle->flags & (UV_CLOSING | UV_CLOSED)) == 0 && handle->fd == -1)
     uv__fsevents_close(handle);
@@ -84,9 +99,22 @@ void uv__fsevents_event_cb(ConstFSEventStreamRef streamRef,
   size_t i;
   int len;
   char** paths;
+  char* path;
+  char* pos;
   uv_fs_event_t* handle;
   uv__fsevents_event_t* event;
   ngx_queue_t add_list;
+  int kFSEventsModified;
+  int kFSEventsRenamed;
+
+  kFSEventsModified = kFSEventStreamEventFlagItemFinderInfoMod |
+                      kFSEventStreamEventFlagItemModified |
+                      kFSEventStreamEventFlagItemInodeMetaMod |
+                      kFSEventStreamEventFlagItemChangeOwner |
+                      kFSEventStreamEventFlagItemXattrMod;
+  kFSEventsRenamed = kFSEventStreamEventFlagItemCreated |
+                     kFSEventStreamEventFlagItemRemoved |
+                     kFSEventStreamEventFlagItemRenamed;
 
   handle = info;
   paths = eventPaths;
@@ -99,19 +127,53 @@ void uv__fsevents_event_cb(ConstFSEventStreamRef streamRef,
                          kFSEventStreamEventFlagEventIdsWrapped |
                          kFSEventStreamEventFlagHistoryDone |
                          kFSEventStreamEventFlagMount |
-                         kFSEventStreamEventFlagUnmount)) {
+                         kFSEventStreamEventFlagUnmount |
+                         kFSEventStreamEventFlagRootChanged)) {
       continue;
     }
 
     /* TODO: Report errors */
-    len = strlen(paths[i]);
+    path = paths[i];
+    len = strlen(path);
+
+    /* Remove absolute path prefix */
+    if (strstr(path, handle->realpath) == path) {
+      path += handle->realpath_len;
+      len -= handle->realpath_len;
+
+      /* Skip back slash */
+      if (*path != 0) {
+        path++;
+        len--;
+      }
+    }
+
+#ifdef MAC_OS_X_VERSION_10_7
+    /* Ignore events with path equal to directory itself */
+    if (len == 0)
+      continue;
+#endif /* MAC_OS_X_VERSION_10_7 */
+
+    /* Do not emit events from subdirectories (without option set) */
+    pos = strchr(path, '/');
+    if ((handle->cf_flags & UV_FS_EVENT_RECURSIVE) == 0 &&
+        pos != NULL &&
+        pos != path + 1)
+      continue;
+
+#ifndef MAC_OS_X_VERSION_10_7
+    path = "";
+    len = 0;
+#endif /* MAC_OS_X_VERSION_10_7 */
+
     event = malloc(sizeof(*event) + len);
     if (event == NULL)
       break;
 
-    memcpy(event->path, paths[i], len + 1);
+    memcpy(event->path, path, len + 1);
 
-    if (eventFlags[i] & kFSEventStreamEventFlagItemModified)
+    if ((eventFlags[i] & kFSEventsModified) != 0 &&
+        (eventFlags[i] & kFSEventsRenamed) == 0)
       event->events = UV_CHANGE;
     else
       event->events = UV_RENAME;
@@ -152,6 +214,11 @@ int uv__fsevents_init(uv_fs_event_t* handle) {
   ctx.retain = NULL;
   ctx.release = NULL;
   ctx.copyDescription = NULL;
+
+  /* Get absolute path to file */
+  handle->realpath = realpath(handle->filename, NULL);
+  if (handle->realpath != NULL)
+    handle->realpath_len = strlen(handle->realpath);
 
   /* Initialize paths array */
   path = CFStringCreateWithCString(NULL,
@@ -220,6 +287,11 @@ int uv__fsevents_close(uv_fs_event_t* handle) {
 
   uv_mutex_destroy(&handle->cf_mutex);
   uv_sem_destroy(&handle->cf_sem);
+  free(handle->realpath);
+  handle->realpath = NULL;
+  handle->realpath_len = 0;
 
   return 0;
 }
+
+#endif /* TARGET_OS_IPHONE */

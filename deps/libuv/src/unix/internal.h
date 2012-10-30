@@ -23,7 +23,6 @@
 #define UV_UNIX_INTERNAL_H_
 
 #include "uv-common.h"
-#include "uv-eio.h"
 
 #include <assert.h>
 #include <stdlib.h> /* abort */
@@ -63,7 +62,7 @@
 # define HAVE_KQUEUE 1
 #endif
 
-#if defined(__APPLE__) && !defined(TARGET_OS_IPHONE)
+#if defined(__APPLE__) && !TARGET_OS_IPHONE
 # include <CoreServices/CoreServices.h>
 #endif
 
@@ -101,13 +100,7 @@ enum {
   UV_TCP_SINGLE_ACCEPT = 0x400  /* Only accept() when idle. */
 };
 
-/* loop flags */
-enum {
-  UV_LOOP_EIO_INITIALIZED = 1
-};
-
 __attribute__((unused))
-__attribute__((always_inline))
 static void uv__req_init(uv_loop_t* loop, uv_req_t* req, uv_req_type type) {
   req->type = type;
   uv__req_register(loop, req);
@@ -122,6 +115,7 @@ int uv__cloexec(int fd, int set);
 int uv__socket(int domain, int type, int protocol);
 int uv__dup(int fd);
 int uv_async_stop(uv_async_t* handle);
+void uv__make_close_pending(uv_handle_t* handle);
 
 void uv__io_init(uv__io_t* handle, uv__io_cb cb, int fd, int events);
 void uv__io_set(uv__io_t* handle, uv__io_cb cb, int fd, int events);
@@ -163,7 +157,15 @@ unsigned int uv__next_timeout(uv_loop_t* loop);
 
 /* signal */
 void uv__signal_close(uv_signal_t* handle);
-void uv__signal_unregister(uv_loop_t* loop);
+void uv__signal_global_once_init(void);
+void uv__signal_loop_cleanup();
+
+/* thread pool */
+void uv__work_submit(uv_loop_t* loop,
+                     struct uv__work *w,
+                     void (*work)(struct uv__work *w),
+                     void (*done)(struct uv__work *w));
+void uv__work_done(uv_async_t* handle, int status);
 
 /* platform specific */
 int uv__platform_loop_init(uv_loop_t* loop, int default_loop);

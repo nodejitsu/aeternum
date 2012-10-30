@@ -7,7 +7,7 @@ CFLAGS+=-framework CoreServices
 endif
 
 ifeq (Linux, $(uname_S))
-CFLAGS+=-lrt -ldl -lm -lev -pthread
+CFLAGS+=-lc -lrt -ldl -lm -lpthread
 endif
 
 ifeq (SunOS, $(uname_S))
@@ -17,7 +17,7 @@ endif
 all: libuv aeternum
 
 aeternum: 
-	gcc $(CFLAGS) -o aeternum aeternum.c options.c deps/libuv/uv.a
+	gcc $(CFLAGS) -o aeternum aeternum.c options.c deps/libuv/libuv.a
 
 libuv: 
 	make -C deps/libuv/

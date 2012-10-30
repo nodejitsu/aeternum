@@ -26,6 +26,7 @@
 # include <mach/mach.h>
 # include <mach/task.h>
 # include <mach/semaphore.h>
+# include <TargetConditionals.h>
 # define UV_PLATFORM_SEM_T semaphore_t
 #endif
 
@@ -41,6 +42,9 @@
   ev_io event_watcher;                                                        \
   int fflags;                                                                 \
   int fd;                                                                     \
+  char* realpath;                                                             \
+  int realpath_len;                                                           \
+  int cf_flags;                                                               \
   void* cf_eventstream;                                                       \
   uv_async_t* cf_cb;                                                          \
   ngx_queue_t cf_events;                                                      \

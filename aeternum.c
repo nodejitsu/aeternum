@@ -83,8 +83,9 @@ void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
 #ifdef __sun
     // The SunOS version returns by reference.
     sig2str(signal_status, signame);
+#elif defined __linux
+    signame = strdup(strsignal(signal_status));
 #else
-    // TODO: Figure out how to make this work on Linux
     signame = strdup(sys_signame[signal_status]);
 #endif
     // This part of the logic in particular can probably stand to be better.
@@ -162,16 +163,21 @@ void set_pidfile_path(char *pidname) {
 
 int main(int argc, char *argv[]) {
   int r;
-  loop = uv_default_loop();
 
-  opts = options_parse(argc, argv);
+  loop = uv_default_loop();
   if (strcmp(argv[1], "start") == 0) {
     argv[1] = "run";
-    opts.target = argv[0];
-    opts.child_args = &argv[0];
+    opts = options_parse(argc, argv);
     spawn_child(1);
     return 0;
   }
+
+  if (strcmp(argv[1], "run") == 0) {
+    argv[1] = argv[0];
+    argv = &argv[1];
+    argc--;
+  }
+  opts = options_parse(argc, argv);
 
   if (opts.pidname != NULL) {
     if (strcspn(opts.pidname, "/") < strlen(opts.pidname))

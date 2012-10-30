@@ -65,6 +65,9 @@ static uv_loop_t* default_loop_ptr;
 
 
 void uv_close(uv_handle_t* handle, uv_close_cb close_cb) {
+  assert(!(handle->flags & (UV_CLOSING | UV_CLOSED)));
+
+  handle->flags |= UV_CLOSING;
   handle->close_cb = close_cb;
 
   switch (handle->type) {
@@ -121,15 +124,22 @@ void uv_close(uv_handle_t* handle, uv_close_cb close_cb) {
     break;
 
   case UV_SIGNAL:
-    uv__signal_close((uv_signal_t*)handle);
-    break;
+    uv__signal_close((uv_signal_t*) handle);
+    /* Signal handles may not be closed immediately. The signal code will */
+    /* itself close uv__make_close_pending whenever appropriate. */
+    return;
 
   default:
     assert(0);
   }
 
-  handle->flags |= UV_CLOSING;
+  uv__make_close_pending(handle);
+}
 
+
+void uv__make_close_pending(uv_handle_t* handle) {
+  assert(handle->flags & UV_CLOSING);
+  assert(!(handle->flags & UV_CLOSED));
   handle->next_closing = handle->loop->closing_handles;
   handle->loop->closing_handles = handle;
 }
@@ -296,134 +306,6 @@ int64_t uv_now(uv_loop_t* loop) {
 
 int uv_is_active(const uv_handle_t* handle) {
   return uv__is_active(handle);
-}
-
-
-static int uv_getaddrinfo_done(eio_req* req_) {
-  uv_getaddrinfo_t* req = req_->data;
-  struct addrinfo *res = req->res;
-#if __sun
-  size_t hostlen = strlen(req->hostname);
-#endif
-
-  req->res = NULL;
-
-  uv__req_unregister(req->loop, req);
-
-  /* see initialization in uv_getaddrinfo() */
-  if (req->hints)
-    free(req->hints);
-  else if (req->service)
-    free(req->service);
-  else if (req->hostname)
-    free(req->hostname);
-  else
-    assert(0);
-
-  if (req->retcode == 0) {
-    /* OK */
-#if EAI_NODATA /* FreeBSD deprecated EAI_NODATA */
-  } else if (req->retcode == EAI_NONAME || req->retcode == EAI_NODATA) {
-#else
-  } else if (req->retcode == EAI_NONAME) {
-#endif
-    uv__set_sys_error(req->loop, ENOENT); /* FIXME compatibility hack */
-#if __sun
-  } else if (req->retcode == EAI_MEMORY && hostlen >= MAXHOSTNAMELEN) {
-    uv__set_sys_error(req->loop, ENOENT);
-#endif
-  } else {
-    req->loop->last_err.code = UV_EADDRINFO;
-    req->loop->last_err.sys_errno_ = req->retcode;
-  }
-
-  req->cb(req, req->retcode, res);
-
-  return 0;
-}
-
-
-static void getaddrinfo_thread_proc(eio_req *req_) {
-  uv_getaddrinfo_t* req = req_->data;
-
-  req->retcode = getaddrinfo(req->hostname,
-                             req->service,
-                             req->hints,
-                             &req->res);
-}
-
-
-int uv_getaddrinfo(uv_loop_t* loop,
-                   uv_getaddrinfo_t* req,
-                   uv_getaddrinfo_cb cb,
-                   const char* hostname,
-                   const char* service,
-                   const struct addrinfo* hints) {
-  size_t hostname_len;
-  size_t service_len;
-  size_t hints_len;
-  eio_req* req_;
-  size_t len;
-  char* buf;
-
-  if (req == NULL || cb == NULL || (hostname == NULL && service == NULL))
-    return uv__set_artificial_error(loop, UV_EINVAL);
-
-  uv_eio_init(loop);
-
-  hostname_len = hostname ? strlen(hostname) + 1 : 0;
-  service_len = service ? strlen(service) + 1 : 0;
-  hints_len = hints ? sizeof(*hints) : 0;
-  buf = malloc(hostname_len + service_len + hints_len);
-
-  if (buf == NULL)
-    return uv__set_artificial_error(loop, UV_ENOMEM);
-
-  uv__req_init(loop, req, UV_GETADDRINFO);
-  req->loop = loop;
-  req->cb = cb;
-  req->res = NULL;
-  req->hints = NULL;
-  req->service = NULL;
-  req->hostname = NULL;
-  req->retcode = 0;
-
-  /* order matters, see uv_getaddrinfo_done() */
-  len = 0;
-
-  if (hints) {
-    req->hints = memcpy(buf + len, hints, sizeof(*hints));
-    len += sizeof(*hints);
-  }
-
-  if (service) {
-    req->service = memcpy(buf + len, service, service_len);
-    len += service_len;
-  }
-
-  if (hostname) {
-    req->hostname = memcpy(buf + len, hostname, hostname_len);
-    len += hostname_len;
-  }
-
-  req_ = eio_custom(getaddrinfo_thread_proc,
-                    EIO_PRI_DEFAULT,
-                    uv_getaddrinfo_done,
-                    req,
-                    &loop->uv_eio_channel);
-
-  if (req_)
-    return 0;
-
-  free(buf);
-
-  return uv__set_artificial_error(loop, UV_ENOMEM);
-}
-
-
-void uv_freeaddrinfo(struct addrinfo* ai) {
-  if (ai)
-    freeaddrinfo(ai);
 }
 
 
