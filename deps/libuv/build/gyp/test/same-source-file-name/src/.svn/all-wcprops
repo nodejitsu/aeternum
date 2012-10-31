@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/1414/trunk/test/same-source-file-name/src
+END
+all.gyp
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1414/trunk/test/same-source-file-name/src/all.gyp
+END
+double.gyp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/!svn/ver/1414/trunk/test/same-source-file-name/src/double.gyp
+END
+prog1.c
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1414/trunk/test/same-source-file-name/src/prog1.c
+END
+prog2.c
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1414/trunk/test/same-source-file-name/src/prog2.c
+END
+func.c
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/1414/trunk/test/same-source-file-name/src/func.c
+END

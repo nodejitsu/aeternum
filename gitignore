@@ -4,5 +4,7 @@
 *.dll
 *.lib
 *.exe
+!*.mk
+
 /aeternum
 /aeternum_g
