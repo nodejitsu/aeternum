@@ -1,0 +1,8 @@
+*.o
+*.so
+*.a
+*.dll
+*.lib
+*.exe
+/aeternum
+/aeternum_g
