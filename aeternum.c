@@ -90,6 +90,7 @@ void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
   char *signame = NULL;
   if (signal_status) {
 #ifdef __sun
+    signame = malloc(SIG2STR_MAX);
     // The SunOS version returns by reference.
     sig2str(signal_status, signame);
 #elif defined __linux
@@ -97,6 +98,7 @@ void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
 #else
     signame = strdup(sys_signame[signal_status]);
 #endif
+printf("%s\n", signame);
     // This part of the logic in particular can probably stand to be better.
     // Currently, SIGINT, SIGTERM, and SIGHUP prevent further child restarts.
     if (strcmp("SIGINT", signame) == 0 ||

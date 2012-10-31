@@ -11,7 +11,7 @@ CFLAGS+=-lc -lrt -ldl -lm -lpthread
 endif
 
 ifeq (SunOS, $(uname_S))
-CFLAGS+=-m32 -lsocket -lkstat -lnsl -lm
+CFLAGS+=-lsendfile -lsocket -lkstat -lnsl -lm
 endif
 
 all: libuv aeternum
@@ -29,7 +29,7 @@ libuv:
 
 clean: 
 	rm -f aeternum
-	rm -f aeternum_db
+	rm -f aeternum_g
 
 cleanall: 
 	rm -f aeternum
