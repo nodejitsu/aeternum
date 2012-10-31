@@ -1,4 +1,4 @@
-CFLAGS=-g -Wall -Ideps/libuv/include
+CFLAGS+=-g -Wall -Ideps/libuv/include
 
 uname_S=$(shell uname -s)
 
@@ -7,7 +7,7 @@ CFLAGS+=-framework CoreServices
 endif
 
 ifeq (Linux, $(uname_S))
-CFLAGS+=-lc -lrt -ldl -lm -lpthread
+LDFLAGS+=-lc -lrt -ldl -lm -pthread
 endif
 
 ifeq (SunOS, $(uname_S))
@@ -19,10 +19,10 @@ all: libuv aeternum
 debug: libuv aeternum_g
 
 aeternum_g:
-	gcc -ggdb $(CFLAGS) -o aeternum_g aeternum.c options.c deps/libuv/libuv.a
+	gcc -ggdb $(CFLAGS) -o aeternum_g aeternum.c options.c deps/libuv/libuv.a $(LDFLAGS)
 
 aeternum: 
-	gcc $(CFLAGS) -o aeternum aeternum.c options.c deps/libuv/libuv.a
+	gcc $(CFLAGS) -o aeternum aeternum.c options.c deps/libuv/libuv.a $(LDFLAGS)
 
 libuv: 
 	cd deps/libuv/; ./gyp_uv -f make
