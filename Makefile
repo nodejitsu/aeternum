@@ -16,6 +16,11 @@ endif
 
 all: libuv aeternum
 
+debug: libuv aeternum_g
+
+aeternum_g:
+	gcc -ggdb $(CFLAGS) -o aeternum_g aeternum.c options.c deps/libuv/libuv.a
+
 aeternum: 
 	gcc $(CFLAGS) -o aeternum aeternum.c options.c deps/libuv/libuv.a
 
@@ -24,6 +29,7 @@ libuv:
 
 clean: 
 	rm -f aeternum
+	rm -f aeternum_db
 
 cleanall: 
 	rm -f aeternum

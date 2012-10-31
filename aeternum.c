@@ -3,12 +3,20 @@
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/types.h>
+#include <pwd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
 #include "uv.h"
 #include "options.h"
 
+#ifdef __WIN32
+#include <shellapi.h>
+#include <Winerror.h>
+#else
+extern char **environ;
+#endif
 static char *pidfile;
 
 static char *outfile;
@@ -61,6 +69,7 @@ void spawn_child(int detach) {
   options.file = strdup(opts.child_args[0]);
   options.args = opts.child_args;
   options.stdio = stdio;
+  options.env = environ;
   options.exit_cb = detach ? NULL : spawn_cb;
   if (detach) options.flags = UV_PROCESS_DETACHED;
 
@@ -90,9 +99,9 @@ void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
 #endif
     // This part of the logic in particular can probably stand to be better.
     // Currently, SIGINT, SIGTERM, and SIGHUP prevent further child restarts.
-    if (strcmp("int", signame) == 0 ||
-        strcmp("term", signame) == 0 ||
-        strcmp("hup", signame) == 0) {
+    if (strcmp("SIGINT", signame) == 0 ||
+        strcmp("SIGTERM", signame) == 0 ||
+        strcmp("SIGHUP", signame) == 0) {
       fprintf(stderr, "Got sig%s, exiting.\n", signame);
       uv_close((uv_handle_t*)req, NULL);
       free(signame);
@@ -143,7 +152,19 @@ void configure_stdio() {
 }
 
 void set_pidfile_path(char *pidname) {
-  char *homedir = getenv("HOME");
+#ifdef __unix
+  const char *homedir = getenv("HOME");
+  if (!homedir) {
+    struct passwd *pw = getpwuid(getuid());
+   homedir = pw->pw_dir;
+  }
+#else
+  WCHAR homedir[MAX_PATH];
+  if (FAILED(SHGetFolderPathW(NULL, CSIDL_PROFILE, NULL, 0, path)) {
+    perror("SHGetFolderPathW");
+    return;
+  }
+#endif
   char *basepath = malloc(strlen(homedir) + 12);
   struct stat has_dir;
 
@@ -154,6 +175,9 @@ void set_pidfile_path(char *pidname) {
       if (mkdir(basepath, 0755) == -1) {
         perror("mkdir");
       }
+    }
+    else {
+      return;
     }
   }
 
@@ -167,7 +191,15 @@ int main(int argc, char *argv[]) {
   loop = uv_default_loop();
   if (strcmp(argv[1], "start") == 0) {
     argv[1] = "run";
-    opts = options_parse(argc, argv);
+
+    opts.infile = NULL;
+    opts.outfile = NULL;
+    opts.errfile = NULL;
+    opts.pidname = NULL;
+    opts.target = argv[0];
+    opts.json = 0;
+    opts.child_args = argv;
+
     spawn_child(1);
     return 0;
   }
