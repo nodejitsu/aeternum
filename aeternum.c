@@ -53,6 +53,7 @@ void cleanup_pid_file(char *pidname) {
   if (unlink(pidname) == -1) {
     fprintf(stderr, "Could not remove %s: %s\n", pidname, strerror(errno));
   }
+  free(pidname);
 }
 
 void spawn_child(int detach) {
@@ -66,7 +67,7 @@ void spawn_child(int detach) {
     stdio[i].data.fd = i;
   }
 
-  options.file = strdup(opts.child_args[0]);
+  options.file = opts.child_args[0];
   options.args = opts.child_args;
   options.stdio = stdio;
   options.env = environ;
@@ -98,7 +99,6 @@ void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
 #else
     signame = strdup(sys_signame[signal_status]);
 #endif
-printf("%s\n", signame);
     // This part of the logic in particular can probably stand to be better.
     // Currently, SIGINT, SIGTERM, and SIGHUP prevent further child restarts.
     if (strcmp("SIGINT", signame) == 0 ||
@@ -117,6 +117,7 @@ printf("%s\n", signame);
   else {
     fprintf(stderr, "Exited with %d, restarting.\n", exit_status);
   }
+  free(signame);
   spawn_child(0);
 }
 
@@ -158,7 +159,7 @@ void set_pidfile_path(char *pidname) {
   const char *homedir = getenv("HOME");
   if (!homedir) {
     struct passwd *pw = getpwuid(getuid());
-   homedir = pw->pw_dir;
+    homedir = pw->pw_dir;
   }
 #else
   WCHAR homedir[MAX_PATH];
@@ -184,7 +185,8 @@ void set_pidfile_path(char *pidname) {
   }
 
   pidfile = malloc(snprintf(NULL, 0, "%s%s", basepath, pidname) + 1);
-  sprintf(pidfile, "%s%s", basepath, pidname); 
+  sprintf(pidfile, "%s%s", basepath, pidname);
+  free(basepath); 
 }
 
 int main(int argc, char *argv[]) {
