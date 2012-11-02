@@ -19,10 +19,10 @@ all: libuv aeternum
 debug: libuv aeternum_g
 
 aeternum_g:
-	gcc -ggdb $(CFLAGS) -o aeternum_g aeternum.c options.c deps/libuv/libuv.a
+	gcc -O0 -ggdb $(CFLAGS) -o aeternum_g aeternum.c options.c deps/libuv/libuv.a
 
 aeternum: 
-	gcc $(CFLAGS) -o aeternum aeternum.c options.c deps/libuv/libuv.a
+	gcc -O2 $(CFLAGS) -o aeternum aeternum.c options.c deps/libuv/libuv.a
 
 libuv: 
 	cd deps/libuv/; ./gyp_uv -f make

@@ -88,37 +88,19 @@ void spawn_child(int detach) {
 }
 
 void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
-  char *signame = NULL;
   if (signal_status) {
-#ifdef __sun
-    signame = malloc(SIG2STR_MAX);
-    // The SunOS version returns by reference.
-    sig2str(signal_status, signame);
-#elif defined __linux
-    signame = strdup(strsignal(signal_status));
-#else
-    signame = strdup(sys_signame[signal_status]);
-#endif
-    // This part of the logic in particular can probably stand to be better.
-    // Currently, SIGINT, SIGTERM, and SIGHUP prevent further child restarts.
-    if (strcmp("SIGINT", signame) == 0 ||
-        strcmp("SIGTERM", signame) == 0 ||
-        strcmp("SIGHUP", signame) == 0) {
-      fprintf(stderr, "Got sig%s, exiting.\n", signame);
-      uv_close((uv_handle_t*)req, NULL);
-      free(signame);
-      cleanup_pid_file(pidfile);
-      return;
-    }
-    else {
-      fprintf(stderr, "Killed by sig%s, restarting.\n", signame);
-    }
+    fprintf(stderr, "Child killed by signal %d, restarting.\n", signal_status);
   }
   else {
-    fprintf(stderr, "Exited with %d, restarting.\n", exit_status);
+    fprintf(stderr, "Child exited with %d, restarting.\n", exit_status);
   }
-  free(signame);
   spawn_child(0);
+}
+
+void handle_signal(int signal_status) {
+  fprintf(stderr, "Aeternum kill by signal %d, exiting.\n", signal_status);
+  uv_process_kill(&child_req, SIGKILL);
+  cleanup_pid_file(pidfile);
 }
 
 int stdio_redirect(char *dest, int fd) {
@@ -192,6 +174,13 @@ void set_pidfile_path(char *pidname) {
 int main(int argc, char *argv[]) {
   int r;
 
+  if (signal (SIGINT, handle_signal) == SIG_IGN)
+    signal (SIGINT, SIG_IGN);
+  if (signal (SIGHUP, handle_signal) == SIG_IGN)
+    signal (SIGHUP, SIG_IGN);
+  if (signal (SIGTERM, handle_signal) == SIG_IGN)
+    signal (SIGTERM, SIG_IGN);
+
   loop = uv_default_loop();
   if (strcmp(argv[1], "start") == 0) {
     argv[1] = "run";
@@ -205,6 +194,7 @@ int main(int argc, char *argv[]) {
     opts.child_args = argv;
 
     spawn_child(1);
+    printf("%d\n", child_req.pid);
     return 0;
   }
 
@@ -229,5 +219,6 @@ int main(int argc, char *argv[]) {
   spawn_child(0);
 
   r = uv_run(loop);
+  free(pidfile);
   return r;
 }
