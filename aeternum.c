@@ -137,17 +137,17 @@ void configure_stdio() {
 }
 
 void set_pidfile_path(char *pidname) {
-#ifdef __unix
-  const char *homedir = getenv("HOME");
-  if (!homedir) {
-    struct passwd *pw = getpwuid(getuid());
-    homedir = pw->pw_dir;
-  }
-#else
+#ifdef _WIN32
   WCHAR homedir[MAX_PATH];
   if (FAILED(SHGetFolderPathW(NULL, CSIDL_PROFILE, NULL, 0, path)) {
     perror("SHGetFolderPathW");
     return;
+  }
+#else
+  const char *homedir = getenv("HOME");
+  if (!homedir) {
+    struct passwd *pw = getpwuid(getuid());
+    homedir = pw->pw_dir;
   }
 #endif
   char *basepath = malloc(strlen(homedir) + 12);
