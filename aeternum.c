@@ -182,6 +182,12 @@ int main(int argc, char *argv[]) {
     signal (SIGTERM, SIG_IGN);
 
   loop = uv_default_loop();
+
+  if (argc == 1) {
+    printf("Usage: aeternum [action] [options] -- program\n");
+    return 1;
+  }
+
   if (strcmp(argv[1], "start") == 0) {
     argv[1] = "run";
 
