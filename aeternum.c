@@ -62,9 +62,16 @@ void spawn_child(int detach) {
 
   options.stdio_count = 3;
 
-  for (i = 0; i < options.stdio_count; i++) {
-    stdio[i].flags = UV_INHERIT_FD;
-    stdio[i].data.fd = i;
+  if (detach) {
+		for (i = 0; i < options.stdio_count; i++) {
+			stdio[i].flags = UV_IGNORE;
+		}
+  }
+  else {
+		for (i = 0; i < options.stdio_count; i++) {
+			stdio[i].flags = UV_INHERIT_FD;
+			stdio[i].data.fd = i;
+		}
   }
 
   options.file = opts.child_args[0];
