@@ -231,7 +231,7 @@ int main(int argc, char *argv[]) {
 
   spawn_child(0);
 
-  r = uv_run(loop);
+  r = uv_run(loop, UV_RUN_DEFAULT);
   free(pidfile);
   return r;
 }
