@@ -1,8 +1,8 @@
-# libuv [![Build Status](https://secure.travis-ci.org/joyent/libuv.png)](http://travis-ci.org/joyent/libuv)
+# libuv
 
 libuv is a new platform layer for Node. Its purpose is to abstract IOCP on
-Windows and libev on Unix systems. We intend to eventually contain all
-platform differences in this library.
+Windows and epoll/kqueue/event ports/etc. on Unix systems. We intend to
+eventually contain all platform differences in this library.
 
 http://nodejs.org/
 
@@ -56,28 +56,43 @@ http://nodejs.org/
 For GCC (including MinGW) there are two methods building: via normal
 makefiles or via GYP. GYP is a meta-build system which can generate MSVS,
 Makefile, and XCode backends. It is best used for integration into other
-projects.  The old (more stable) system is using Makefiles.
+projects.  The old system is using plain GNU Makefiles.
 
 To build via Makefile simply execute:
 
     make
 
-To build with Visual Studio run the vcbuilds.bat file which will
+MinGW users should run this instead:
+
+    make OS=mingw
+
+Out-of-tree builds are supported:
+
+    make builddir_name=/path/to/builddir
+
+To build with Visual Studio run the vcbuild.bat file which will
 checkout the GYP code into build/gyp and generate the uv.sln and
 related files.
 
 Windows users can also build from cmd-line using msbuild.  This is
 done by running vcbuild.bat from Visual Studio command prompt.
 
-To have GYP generate build script for another system you will need to
-checkout GYP into the project tree manually:
+To have GYP generate build script for another system, make sure that
+you have Python 2.6 or 2.7 installed, then checkout GYP into the
+project tree manually:
 
+    mkdir -p build
     svn co http://gyp.googlecode.com/svn/trunk build/gyp
+
+Or:
+
+    mkdir -p build
+    git clone https://git.chromium.org/external/gyp.git build/gyp
 
 Unix users run
 
     ./gyp_uv -f make
-    make
+    make -C out
 
 Macintosh users run
 
