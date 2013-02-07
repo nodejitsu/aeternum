@@ -25,7 +25,6 @@ aeternum:
 	gcc -O2 $(CFLAGS) -o aeternum aeternum.c options.c deps/libuv/libuv.a
 
 libuv: 
-	cd deps/libuv/; ./gyp_uv -f make
 	make -C deps/libuv/
 
 clean: 
