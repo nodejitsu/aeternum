@@ -4,7 +4,7 @@
   "description": "A process monitor in libuv",
   "repository": {
     "type": "git",
-    "url": "git://github.com/nodejitsu/aeternum"
+    "url": "http://github.com/opsmezzo/aeternum.git"
   },
   "scripts": {
     "preinstall": "make"
