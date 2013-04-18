@@ -7,7 +7,7 @@ CFLAGS+=-framework CoreServices
 endif
 
 ifeq (Linux, $(uname_S))
-CFLAGS+=-lc -lrt -ldl -lm -lpthread
+CFLAGS+=-lc -lrt -ldl -lm -pthread
 endif
 
 ifeq (SunOS, $(uname_S))
