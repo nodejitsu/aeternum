@@ -9,6 +9,7 @@
 *.exe
 !*.mk
 *.pid
+*.buildstamp
 
 /aeternum
 /aeternum_g
