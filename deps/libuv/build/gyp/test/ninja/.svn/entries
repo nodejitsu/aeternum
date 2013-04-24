@@ -1,43 +1,0 @@
-10
-
-dir
-1527
-http://gyp.googlecode.com/svn/trunk/test/ninja
-http://gyp.googlecode.com/svn
-
-
-
-2012-10-18T19:45:07.787151Z
-1521
-thakis@chromium.org
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-78cadc50-ecff-11dd-a971-7dbc132099af
-
-solibs_avoid_relinking
-dir
-
-s-needs-no-depfiles
-dir
-
-action_dependencies
-dir
-
-chained-dependency
-dir
-
-normalize-paths-win
-dir
-

@@ -1,43 +1,0 @@
-10
-
-dir
-1527
-http://gyp.googlecode.com/svn/trunk/test/configurations
-http://gyp.googlecode.com/svn
-
-
-
-2012-10-05T02:22:17.793813Z
-1517
-thakis@chromium.org
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-78cadc50-ecff-11dd-a971-7dbc132099af
-
-x64
-dir
-
-basics
-dir
-
-invalid
-dir
-
-inheritance
-dir
-
-target_platform
-dir
-

@@ -1,229 +1,0 @@
-10
-
-dir
-1527
-http://gyp.googlecode.com/svn/trunk/test
-http://gyp.googlecode.com/svn
-
-
-
-2012-10-31T01:25:40.392117Z
-1527
-scottmg@chromium.org
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-78cadc50-ecff-11dd-a971-7dbc132099af
-
-standalone-static-library
-dir
-
-dependencies
-dir
-
-dependency-copy
-dir
-
-actions-subdir
-dir
-
-variants
-dir
-
-compiler-override
-dir
-
-configurations
-dir
-
-builddir
-dir
-
-custom-generator
-dir
-
-external-cross-compile
-dir
-
-mac
-dir
-
-many-actions
-dir
-
-restat
-dir
-
-scons_tools
-dir
-
-toplevel-dir
-dir
-
-actions-bare
-dir
-
-variables
-dir
-
-no-output
-dir
-
-make
-dir
-
-cxxflags
-dir
-
-same-rule-output-file-name
-dir
-
-same-target-name
-dir
-
-msvs
-dir
-
-actions-multiple
-dir
-
-rules
-dir
-
-win
-dir
-
-actions-none
-dir
-
-same-target-name-different-directory
-dir
-
-ninja
-dir
-
-same-gyp-name
-dir
-
-defines-escaping
-dir
-
-include_dirs
-dir
-
-build-option
-dir
-
-small
-dir
-
-gyp-defines
-dir
-
-hard_dependency
-dir
-
-subdirectory
-dir
-
-additional-targets
-dir
-
-assembly
-dir
-
-copies
-dir
-
-generator-output
-dir
-
-link-objects
-dir
-
-sibling
-dir
-
-escaping
-dir
-
-rules-variables
-dir
-
-library
-dir
-
-lib
-dir
-
-compilable
-dir
-
-rename
-dir
-
-rules-dirname
-dir
-
-exclusion
-dir
-
-relative
-dir
-
-home_dot_gyp
-dir
-
-rules-rebuild
-dir
-
-same-source-file-name
-dir
-
-product
-dir
-
-module
-dir
-
-standalone
-dir
-
-sanitize-rule-names
-dir
-
-cflags
-dir
-
-actions
-dir
-
-multiple-targets
-dir
-
-hello
-dir
-
-intermediate_dir
-dir
-
-toolsets
-dir
-
-errors
-dir
-
-defines
-dir
-
