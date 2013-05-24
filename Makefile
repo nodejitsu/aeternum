@@ -25,7 +25,7 @@ aeternum:
 	gcc -O2 $(CFLAGS) -o aeternum aeternum.c options.c deps/libuv/libuv.a $(LDFLAGS)
 
 libuv: 
-	make -C deps/libuv/
+	$(MAKE) -C deps/libuv/
 
 clean: 
 	rm -f aeternum
@@ -34,6 +34,6 @@ clean:
 cleanall: 
 	rm -f aeternum
 	rm -f aeternum_g
-	make clean -C deps/libuv/
+	$(MAKE) clean -C deps/libuv/
 
 .PHONY: clean cleanall
