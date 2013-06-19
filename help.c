@@ -41,7 +41,7 @@ void print_help() {
   int i;
   print_help_header();
   for (i = 0; i < help_list.length; i++) {
-    printf("aeternum %s\t\t\t%s\n", help_list.commands[i].syntax, help_list.commands[i].desc);
+    printf("aeternum %s %s\t\t\t%s\n", help_list.commands[i].name, help_list.commands[i].syntax, help_list.commands[i].desc);
   }
 }
 
