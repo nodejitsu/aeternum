@@ -10,6 +10,7 @@
 #include <errno.h>
 #include "uv.h"
 #include "options.h"
+#include "help.h"
 
 #ifdef __WIN32
 #include <shellapi.h>
@@ -190,8 +191,26 @@ int main(int argc, char *argv[]) {
 
   loop = uv_default_loop();
 
+  add_help("start", "file", "Run a file to be monitored and daemonize it", (char*[]) {
+    "Test"
+  });
+
+  add_help("run", "file", "Run a file to be monitored", (char*[]) {
+    "Test",
+    "test2",
+    "test3"
+  });
+
+  add_help("-i", "file", "Input file", (char*[]) {
+    "Input file"
+  });
+
+  add_help("-o", "file", "Output file", (char*[]) {
+    "Output file"
+  });
+
   if (argc == 1) {
-    printf("Usage: aeternum [action] [options] -- program\n");
+    print_help();
     return 1;
   }
 
