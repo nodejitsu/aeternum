@@ -190,8 +190,6 @@ int main(int argc, char *argv[]) {
     signal (SIGINT, SIG_IGN);
   if (signal (SIGHUP, handle_signal) == SIG_IGN)
     signal (SIGHUP, SIG_IGN);
-  if (signal (SIGTERM, handle_signal) == SIG_IGN)
-    signal (SIGTERM, SIG_IGN);
 
   loop = uv_default_loop();
 
