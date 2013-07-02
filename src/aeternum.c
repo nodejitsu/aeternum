@@ -8,8 +8,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
-#include "uv.h"
-#include "options.h"
+
+#include <uv.h>
+#include <saneopt.h>
+
+#include "../options.h"
 
 #ifdef __WIN32
 #include <shellapi.h>
@@ -180,6 +183,8 @@ void set_pidfile_path(char *pidname) {
 
 int main(int argc, char *argv[]) {
   int r;
+  saneopt_t* opt;
+  char** args;
 
   if (signal (SIGINT, handle_signal) == SIG_IGN)
     signal (SIGINT, SIG_IGN);
@@ -195,7 +200,10 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  if (strcmp(argv[1], "start") == 0) {
+  opt = saneopt_init(argc - 1, argv + 1);
+  args = saneopt_arguments(opt);
+
+  if (strcmp(args[0], "start") == 0) {
     argv[1] = "run";
 
     opts.infile = NULL;
@@ -211,12 +219,13 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  if (strcmp(argv[1], "run") == 0) {
-    argv[1] = argv[0];
-    argv = &argv[1];
-    argc--;
-  }
-  opts = options_parse(argc, argv);
+  opts.infile = saneopt_get(opt, "i");
+  opts.outfile = saneopt_get(opt, "o");
+  opts.errfile = saneopt_get(opt, "e");
+  opts.pidname = saneopt_get(opt, "p");
+  opts.json = (saneopt_get(opt, "j") != NULL) ? 1 : 0;
+  opts.target = args[1];
+  opts.child_args = &args[1];
 
   if (opts.pidname != NULL) {
     if (strcspn(opts.pidname, "/") < strlen(opts.pidname))
