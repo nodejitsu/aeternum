@@ -1,6 +1,8 @@
-CFLAGS=-g -Wall -Ideps/libuv/include
+CFLAGS=-g -Wall -Ideps/libuv/include -Ideps/saneopt/include
 
 uname_S=$(shell uname -s)
+
+OBJS += src/aeternum.c
 
 ifeq (Darwin, $(uname_S))
 CFLAGS+=-framework CoreServices
@@ -14,24 +16,25 @@ ifeq (SunOS, $(uname_S))
 CFLAGS+=-lsendfile -lsocket -lkstat -lnsl -lm
 endif
 
-all: libuv aeternum
+all: libuv libsaneopt aeternum
 
-debug: libuv aeternum_g
+src/%.o: src/%.c
+	gcc $(CFLAGS) -c $< -o $@
 
-aeternum_g:
-	gcc -O0 -ggdb $(CFLAGS) -o aeternum_g aeternum.c options.c deps/libuv/libuv.a $(LDFLAGS)
+aeternum: $(OBJS)
+	gcc $^ -O2 $(CFLAGS) deps/saneopt/libsaneopt.a deps/libuv/libuv.a $(LDFLAGS) -o $@
 
-aeternum: 
-	gcc -O2 $(CFLAGS) -o aeternum aeternum.c options.c deps/libuv/libuv.a $(LDFLAGS)
-
-libuv: 
+libuv:
 	$(MAKE) -C deps/libuv/
 
-clean: 
+libsaneopt:
+	$(MAKE) -C deps/saneopt/
+
+clean:
 	rm -f aeternum
 	rm -f aeternum_g
 
-cleanall: 
+cleanall:
 	rm -f aeternum
 	rm -f aeternum_g
 	$(MAKE) clean -C deps/libuv/

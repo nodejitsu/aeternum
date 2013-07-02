@@ -13,6 +13,4 @@ struct options_s {
 
 typedef struct options_s options_t;
 
-options_t options_parse(int argc, char *argv[]);
-
 #endif
