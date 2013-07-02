@@ -204,13 +204,15 @@ int main(int argc, char *argv[]) {
   args = saneopt_arguments(opt);
 
   if (strcmp(args[0], "start") == 0) {
+    argv[1] = "run";
+
     opts.infile = NULL;
     opts.outfile = NULL;
     opts.errfile = NULL;
     opts.pidname = NULL;
-    opts.target = args[1];
+    opts.target = argv[0];
     opts.json = 0;
-    opts.child_args = args;
+    opts.child_args = argv;
 
     spawn_child(1);
     printf("%d\n", child_req.pid);
@@ -222,6 +224,7 @@ int main(int argc, char *argv[]) {
   opts.errfile = saneopt_get(opt, "e");
   opts.pidname = saneopt_get(opt, "p");
   opts.json = (saneopt_get(opt, "j") != NULL) ? 1 : 0;
+  opts.target = args[1];
   opts.child_args = &args[1];
 
   if (opts.pidname != NULL) {
