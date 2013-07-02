@@ -14,3 +14,4 @@
 /aeternum
 /aeternum_g
 /deps/libuv/out/
+*.dSYM
