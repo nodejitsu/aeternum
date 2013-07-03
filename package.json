@@ -6,6 +6,9 @@
     "type": "git",
     "url": "http://github.com/opsmezzo/aeternum.git"
   },
+  "devDependencies": {
+    "assert-called": "0.1.x"
+  },
   "scripts": {
     "preinstall": "make"
   },

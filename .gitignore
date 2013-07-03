@@ -15,3 +15,4 @@
 /aeternum_g
 /deps/libuv/out/
 *.dSYM
+node_modules
