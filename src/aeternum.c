@@ -20,7 +20,6 @@
 #else
 extern char **environ;
 #endif
-static char *pidfile;
 
 static char *outfile;
 static char *errfile;
@@ -94,7 +93,9 @@ void spawn_child(int detach) {
     return;
   }
 
-  write_pid_file(child_req.pid, pidfile);
+  if (opts.pidname != NULL) {
+    write_pid_file(child_req.pid, opts.pidname);
+  }
 }
 
 void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
@@ -110,7 +111,10 @@ void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
 void handle_signal(int signal_status) {
   fprintf(stderr, "Aeternum kill by signal %d, exiting.\n", signal_status);
   uv_process_kill(&child_req, SIGKILL);
-  cleanup_pid_file(pidfile);
+
+  if (opts.pidname) {
+    cleanup_pid_file(opts.pidname);
+  }
 }
 
 int stdio_redirect(char *dest, int fd) {
@@ -144,41 +148,6 @@ void configure_stdio() {
   else {
     stdio_redirect(opts.outfile, STDERR_FILENO);
   }
-}
-
-void set_pidfile_path(char *pidname) {
-#ifdef _WIN32
-  WCHAR homedir[MAX_PATH];
-  if (FAILED(SHGetFolderPathW(NULL, CSIDL_PROFILE, NULL, 0, path)) {
-    perror("SHGetFolderPathW");
-    return;
-  }
-#else
-  const char *homedir = getenv("HOME");
-  if (!homedir) {
-    struct passwd *pw = getpwuid(getuid());
-    homedir = pw->pw_dir;
-  }
-#endif
-  char *basepath = malloc(strlen(homedir) + 12);
-  struct stat has_dir;
-
-  sprintf(basepath, "%s/.aeternum/", homedir);
-
-  if (lstat(basepath, &has_dir) == -1) {
-    if (errno == ENOENT) {
-      if (mkdir(basepath, 0755) == -1) {
-        perror("mkdir");
-      }
-    }
-    else {
-      return;
-    }
-  }
-
-  pidfile = malloc(snprintf(NULL, 0, "%s%s", basepath, pidname) + 1);
-  sprintf(pidfile, "%s%s", basepath, pidname);
-  free(basepath); 
 }
 
 int main(int argc, char *argv[]) {
@@ -225,20 +194,11 @@ int main(int argc, char *argv[]) {
   opts.target = args[1];
   opts.child_args = &args[1];
 
-  if (opts.pidname != NULL) {
-    if (strcspn(opts.pidname, "/") < strlen(opts.pidname))
-      pidfile = strdup(opts.pidname);
-    else set_pidfile_path(opts.pidname);
-  }
-  else {
-    set_pidfile_path(opts.target);
-  }
-
   configure_stdio();
 
   spawn_child(0);
 
   r = uv_run(loop, UV_RUN_DEFAULT);
-  free(pidfile);
+
   return r;
 }
