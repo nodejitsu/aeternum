@@ -115,6 +115,7 @@ void handle_signal(int signal_status) {
   if (opts.pidname) {
     cleanup_pid_file(opts.pidname);
   }
+  exit(0);
 }
 
 int stdio_redirect(char *dest, int fd) {
@@ -155,10 +156,9 @@ int main(int argc, char *argv[]) {
   saneopt_t* opt;
   char** args;
 
-  if (signal (SIGINT, handle_signal) == SIG_IGN)
-    signal (SIGINT, SIG_IGN);
-  if (signal (SIGHUP, handle_signal) == SIG_IGN)
-    signal (SIGHUP, SIG_IGN);
+  signal(SIGHUP, SIG_IGN);
+  signal(SIGINT, handle_signal);
+  signal(SIGTERM, handle_signal);
 
   loop = uv_default_loop();
 
