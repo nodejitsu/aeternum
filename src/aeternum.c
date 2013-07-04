@@ -14,12 +14,7 @@
 
 #include "../options.h"
 
-#ifdef __WIN32
-#include <shellapi.h>
-#include <Winerror.h>
-#else
 extern char **environ;
-#endif
 
 static char *outfile;
 static char *errfile;
