@@ -105,6 +105,9 @@ void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
 
 void handle_signal(int signal_status) {
   fprintf(stderr, "Aeternum kill by signal %d, exiting.\n", signal_status);
+
+  uv_process_kill(&child_req, SIGTERM);
+  sleep(5); // Just `sleep` here, not doing anything important anyway.
   uv_process_kill(&child_req, SIGKILL);
 
   if (opts.pidname) {
