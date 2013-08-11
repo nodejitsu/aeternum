@@ -116,6 +116,13 @@ void handle_signal(int signal_status) {
   exit(0);
 }
 
+void restart_child(int signal_status) {
+  fprintf(stderr, "Aeternum received SIGUSR1, killing child.\n");
+  uv_process_kill(&child_req, SIGTERM);
+  sleep(5); // Just `sleep` here, not doing anything important anyway.
+  uv_process_kill(&child_req, SIGKILL);
+}
+
 int stdio_redirect(char *dest, int fd) {
   int out;
 
@@ -157,6 +164,7 @@ int main(int argc, char *argv[]) {
   signal(SIGHUP, SIG_IGN);
   signal(SIGINT, handle_signal);
   signal(SIGTERM, handle_signal);
+  signal(SIGUSR1, restart_child);
 
   loop = uv_default_loop();
 
