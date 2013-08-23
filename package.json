@@ -10,11 +10,12 @@
     "assert-called": "0.1.x"
   },
   "scripts": {
-    "preinstall": "make"
+    "preinstall": "make",
+    "test": "node test/run-test.js"
   },
   "bin": {
     "aeternum": "aeternum"
-  }, 
+  },
   "author": "Nodejitsu, Inc.",
   "license": "MIT",
   "readmeFilename": "README.md"
