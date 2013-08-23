@@ -121,6 +121,8 @@ void restart_child(int signal_status) {
   uv_process_kill(&child_req, SIGTERM);
   sleep(5); // Just `sleep` here, not doing anything important anyway.
   uv_process_kill(&child_req, SIGKILL);
+  // Re-assign signal handler
+  signal(SIGUSR1, restart_child);
 }
 
 int stdio_redirect(char *dest, int fd) {
