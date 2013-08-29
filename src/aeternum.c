@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <errno.h>
 
@@ -16,14 +17,13 @@
 
 extern char **environ;
 
-static char *outfile;
-static char *errfile;
-
 options_t opts;
 
 uv_loop_t *loop;
 uv_process_t child_req;
 uv_process_options_t options;
+
+static struct timeval start_tv;
 
 void spawn_cb(uv_process_t*, int, int);
 void configure_stdio();
@@ -78,6 +78,10 @@ void spawn_child(int detach) {
   options.exit_cb = detach ? NULL : spawn_cb;
   if (detach) options.flags = UV_PROCESS_DETACHED;
 
+  if (opts.min_uptime != 0) {
+    gettimeofday(&start_tv, NULL);
+  }
+
   if (uv_spawn(loop, &child_req, options)) {
     fprintf(stderr, "Error %s\n", uv_err_name(uv_last_error(loop)));
     fprintf(stderr, "%s\n", uv_strerror(uv_last_error(loop)));
@@ -94,6 +98,20 @@ void spawn_child(int detach) {
 }
 
 void spawn_cb(uv_process_t *req, int exit_status, int signal_status) {
+  struct timeval tv;
+  int ms_up;
+
+  if (opts.min_uptime != 0) {
+    gettimeofday(&tv, NULL);
+    ms_up = ((start_tv.tv_sec * 1000) + (start_tv.tv_usec / 1000)) -
+            ((tv.tv_sec * 1000) + (tv.tv_usec / 1000));
+
+    if (ms_up < opts.min_uptime) {
+      fprintf(stderr, "Child exited prematurely with %d, exiting.\n", exit_status);
+      exit(2);
+    }
+  }
+
   if (signal_status) {
     fprintf(stderr, "Child killed by signal %d, restarting.\n", signal_status);
   }
@@ -166,6 +184,7 @@ int main(int argc, char *argv[]) {
   int r;
   saneopt_t* opt;
   char** args;
+  char* min_uptime;
 
   signal(SIGHUP, SIG_IGN);
   signal(SIGINT, handle_signal);
@@ -189,6 +208,7 @@ int main(int argc, char *argv[]) {
     opts.outfile = NULL;
     opts.errfile = NULL;
     opts.pidname = NULL;
+    opts.min_uptime = 0;
     opts.target = argv[0];
     opts.json = 0;
     opts.child_args = argv;
@@ -205,6 +225,14 @@ int main(int argc, char *argv[]) {
   opts.json = (saneopt_get(opt, "j") != NULL) ? 1 : 0;
   opts.target = args[1];
   opts.child_args = &args[1];
+
+  min_uptime = saneopt_get(opt, "min-uptime");
+  if (min_uptime != NULL) {
+    sscanf(min_uptime, "%d", &opts.min_uptime);
+  }
+  else {
+    opts.min_uptime = 0;
+  }
 
   configure_stdio();
 
