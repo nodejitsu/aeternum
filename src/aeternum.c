@@ -144,15 +144,19 @@ int stdio_redirect(char *dest, int fd) {
 }
 
 void configure_stdio() {
-  outfile = opts.outfile;
-  errfile = opts.errfile;
-  stdio_redirect(opts.infile, STDIN_FILENO);
-  stdio_redirect(opts.outfile, STDOUT_FILENO);
-  if (opts.errfile != NULL) {
-    stdio_redirect(opts.errfile, STDERR_FILENO);
+  if (opts.infile != NULL) {
+    stdio_redirect(opts.infile, STDIN_FILENO);
   }
-  else {
-    stdio_redirect(opts.outfile, STDERR_FILENO);
+
+  if (opts.outfile != NULL) {
+    stdio_redirect(opts.outfile, STDOUT_FILENO);
+
+    if (opts.errfile != NULL) {
+      stdio_redirect(opts.errfile, STDERR_FILENO);
+    }
+    else {
+      stdio_redirect(opts.outfile, STDERR_FILENO);
+    }
   }
 }
 
