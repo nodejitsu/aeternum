@@ -9,6 +9,7 @@ struct options_s {
   char *pidname;
   int json;
   char **child_args;
+  int min_uptime;
 };
 
 typedef struct options_s options_t;
