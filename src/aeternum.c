@@ -50,7 +50,6 @@ void cleanup_pid_file(char *pidname) {
   if (unlink(pidname) == -1) {
     fprintf(stderr, "Could not remove %s: %s\n", pidname, strerror(errno));
   }
-  free(pidname);
 }
 
 void spawn_child(int detach) {
