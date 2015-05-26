@@ -19,10 +19,10 @@ endif
 all: libuv libsaneopt aeternum
 
 src/%.o: src/%.c
-	gcc $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 aeternum: $(OBJS)
-	gcc $^ -O2 $(CFLAGS) deps/saneopt/libsaneopt.a deps/libuv/libuv.a $(LDFLAGS) -o $@
+	$(CC) $^ -O2 $(CFLAGS) deps/saneopt/libsaneopt.a deps/libuv/libuv.a $(LDFLAGS) -o $@
 
 libuv:
 	$(MAKE) -C deps/libuv/
