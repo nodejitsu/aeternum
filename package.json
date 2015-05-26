@@ -1,6 +1,6 @@
 {
   "name": "aeternum",
-  "version": "0.2.7",
+  "version": "0.3.0",
   "description": "A process monitor in libuv",
   "repository": {
     "type": "git",
